@@ -1,0 +1,32 @@
+sources:
+  http_in:
+    type: http_server
+    address: 0.0.0.0:8686
+    path: /log
+    encoding: json
+
+transforms:
+  normalize_ecs:
+    type: remap
+    inputs:
+      - http_in
+    source: |
+      ."@timestamp" = ."@timestamp" || now()
+      .source.ip = .source.ip || "127.0.0.1"
+      .destination.ip = .destination.ip || "127.0.0.1"
+      .destination.port = to_int(.destination.port) ?? 0
+      .user.name = .user.name || "SYSTEM"
+      .host.name = .host.name || "unknown-host"
+      .host.criticality = .host.criticality || "MEDIUM"
+      .process.command_line = .process.command_line || ""
+      .event.original = .event.original || ""
+      .event.category = .event.category || "audit"
+
+sinks:
+  siem_sink:
+    type: http
+    inputs:
+      - normalize_ecs
+    uri: http://siem_engine:8080/events
+    encoding:
+      codec: json

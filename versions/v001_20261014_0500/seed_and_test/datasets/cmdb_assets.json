@@ -1,0 +1,94 @@
+{
+  "assets": [
+    {
+      "host_name": "srv-ad-dc01.corp.local",
+      "ip": "10.0.0.5",
+      "role": "Domain Controller",
+      "criticality": "CRITICAL",
+      "owner": "secops-infra@corp.local",
+      "os": "Windows Server 2022",
+      "is_allowlisted": true
+    },
+    {
+      "host_name": "srv-db-prod01.corp.local",
+      "ip": "10.0.0.10",
+      "role": "Production Database",
+      "criticality": "CRITICAL",
+      "owner": "dba-team@corp.local",
+      "os": "Ubuntu 22.04 LTS",
+      "is_allowlisted": true
+    },
+    {
+      "host_name": "gw-core-01.corp.local",
+      "ip": "10.0.0.1",
+      "role": "Core Gateway / Router",
+      "criticality": "CRITICAL",
+      "owner": "netops@corp.local",
+      "os": "Cisco IOS-XE",
+      "is_allowlisted": true
+    },
+    {
+      "host_name": "dns-corp-01.corp.local",
+      "ip": "8.8.8.8",
+      "role": "Upstream DNS Resolver",
+      "criticality": "CRITICAL",
+      "owner": "netops@corp.local",
+      "os": "Network Appliance",
+      "is_allowlisted": true
+    },
+    {
+      "host_name": "dns-corp-02.corp.local",
+      "ip": "1.1.1.1",
+      "role": "Secondary Upstream DNS",
+      "criticality": "CRITICAL",
+      "owner": "netops@corp.local",
+      "os": "Network Appliance",
+      "is_allowlisted": true
+    },
+    {
+      "host_name": "srv-web-ext01.corp.local",
+      "ip": "192.168.1.50",
+      "role": "DMZ Web Application Server",
+      "criticality": "HIGH",
+      "owner": "ecommerce-dev@corp.local",
+      "os": "Ubuntu 22.04 LTS",
+      "is_allowlisted": false
+    },
+    {
+      "host_name": "ws-fin-042.corp.local",
+      "ip": "10.0.10.42",
+      "role": "Finance Workstation",
+      "criticality": "MEDIUM",
+      "owner": "alice.finance@corp.local",
+      "os": "Windows 11 Enterprise",
+      "is_allowlisted": false
+    },
+    {
+      "host_name": "ws-hr-015.corp.local",
+      "ip": "10.0.10.15",
+      "role": "HR Workstation",
+      "criticality": "LOW",
+      "owner": "bob.hr@corp.local",
+      "os": "Windows 11 Enterprise",
+      "is_allowlisted": false
+    },
+    {
+      "host_name": "ws-dev-088.corp.local",
+      "ip": "10.0.20.88",
+      "role": "Software Developer Workstation",
+      "criticality": "MEDIUM",
+      "owner": "charlie.dev@corp.local",
+      "os": "Fedora 39 Workstation",
+      "is_allowlisted": false
+    },
+    {
+      "host_name": "srv-ci-runner03.corp.local",
+      "ip": "10.0.30.12",
+      "role": "CI/CD Build Runner",
+      "criticality": "MEDIUM",
+      "owner": "devops@corp.local",
+      "os": "Ubuntu 22.04 LTS",
+      "is_allowlisted": false
+    }
+  ]
+}

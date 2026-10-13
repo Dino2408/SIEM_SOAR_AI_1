@@ -1,0 +1,90 @@
+[
+  {
+    "id": "SIGMA_001",
+    "title": "PowerShell Obfuscated Execution or Download Cradle",
+    "tactic": "Execution",
+    "technique": "T1059.001",
+    "severity": "HIGH",
+    "patterns": ["-enc", "iex ", "downloadstring", "webclient", "new-object net.webclient"]
+  },
+  {
+    "id": "SIGMA_002",
+    "title": "LSASS Memory Dumping for Credential Theft",
+    "tactic": "Credential Access",
+    "technique": "T1003.001",
+    "severity": "CRITICAL",
+    "patterns": ["minidump", "comsvcs.dll", "lsass", "sekurlsa", "procdump"]
+  },
+  {
+    "id": "SIGMA_003",
+    "title": "Tampering with Defender / Antivirus Controls",
+    "tactic": "Defense Evasion",
+    "technique": "T1562.001",
+    "severity": "HIGH",
+    "patterns": ["disablerealtimemonitoring", "disablebehaviormonitoring", "set-mppreference"]
+  },
+  {
+    "id": "SIGMA_004",
+    "title": "Inhibiting System Recovery / Shadow Copy Deletion",
+    "tactic": "Impact",
+    "technique": "T1490",
+    "severity": "CRITICAL",
+    "patterns": ["vssadmin delete shadows", "vssadmin.exe delete", "shadowcopy delete"]
+  },
+  {
+    "id": "SIGMA_005",
+    "title": "Malicious Scheduled Task Creation with External Download",
+    "tactic": "Persistence",
+    "technique": "T1053.005",
+    "severity": "HIGH",
+    "patterns": ["schtasks /create", "certutil -urlcache", "certutil -split"]
+  },
+  {
+    "id": "SIGMA_006",
+    "title": "Remote Service Execution via PsExec",
+    "tactic": "Lateral Movement",
+    "technique": "T1021.002",
+    "severity": "HIGH",
+    "patterns": ["psexec", "psexesvc.exe"]
+  },
+  {
+    "id": "SIGMA_007",
+    "title": "Internal Network Reconnaissance from Web Server / DMZ",
+    "tactic": "Discovery",
+    "technique": "T1046",
+    "severity": "MEDIUM",
+    "patterns": ["nmap -s", "nmap -p", "masscan"]
+  },
+  {
+    "id": "SIGMA_008",
+    "title": "Privilege Escalation via Sudoers Tampering",
+    "tactic": "Privilege Escalation",
+    "technique": "T1548.003",
+    "severity": "CRITICAL",
+    "patterns": ["nopasswd: all", "/etc/sudoers"]
+  },
+  {
+    "id": "SIGMA_009",
+    "title": "Command and Control Beaconing / Outbreak",
+    "tactic": "Command and Control",
+    "technique": "T1071.001",
+    "severity": "HIGH",
+    "patterns": ["beacon_stage2", "storm.exe --c2", "rapid_c2_burst", "submit.php -d id="]
+  },
+  {
+    "id": "SIGMA_010",
+    "title": "Exfiltration of Sensitive Archives to External IP",
+    "tactic": "Exfiltration",
+    "technique": "T1567.002",
+    "severity": "HIGH",
+    "patterns": ["rclone copy", "exfil-bucket"]
+  },
+  {
+    "id": "SIGMA_011",
+    "title": "Adversarial Prompt Injection or Spoofing In Log Stream",
+    "tactic": "Defense Evasion",
+    "technique": "T1562",
+    "severity": "HIGH",
+    "patterns": ["ignore prior", "ignore previous instructions", "system override", "admin notice", "</untrusted_log_data>", "reset all circuit breaker"]
+  }
+]
