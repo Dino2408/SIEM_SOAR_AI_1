@@ -42,49 +42,49 @@ def wait_for_qdrant(client, max_retries=30):
 
 def main():
     logger.info(f"Connecting to Qdrant at {QDRANT_HOST}:{QDRANT_PORT}...")
-    client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=10.0)
-    
-    if not wait_for_qdrant(client):
-        logger.error("Failed to connect to Qdrant!")
-        exit(1)
-
-    # Recreate collection
     try:
-        client.delete_collection(COLLECTION_NAME)
-    except Exception:
-        pass
+        client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=5.0)
+        if not wait_for_qdrant(client, max_retries=5):
+            logger.warning("Qdrant not available, continuing in local mode.")
+            return
+        
+        try:
+            client.delete_collection(COLLECTION_NAME)
+        except Exception:
+            pass
 
-    client.create_collection(
-        collection_name=COLLECTION_NAME,
-        vectors_config=VectorParams(size=EMBED_DIM, distance=Distance.COSINE)
-    )
-    logger.info(f"Created collection '{COLLECTION_NAME}'")
+        client.create_collection(
+            collection_name=COLLECTION_NAME,
+            vectors_config=VectorParams(size=EMBED_DIM, distance=Distance.COSINE)
+        )
+        logger.info(f"Created collection '{COLLECTION_NAME}'")
 
-    # Sample historical False Positive knowledge
-    fp_samples = [
-        "Windows Update orchestration agent checking for updates svchost.exe -k netsvcs -p -s wuauserv",
-        "Daily automated backup script compressing database dumps rsync -avz /var/backups/pg_dump.sql",
-        "CI/CD pipeline executing unit tests inside container gitlab-runner docker run maven clean test",
-        "Finance user opening spreadsheet and generating weekly report EXCEL.EXE Q3_Financial_Analysis.xlsx",
-        "HR user updating employee records in internal HR web portal msedge.exe https://internal-hr.corp.local",
-        "Developer compiling Go microservices and running tests go test -v -cover ./pkg/storage/...",
-        "Network monitoring healthcheck polling gateway interface statistics snmpd -Lsd -Lf",
-        "Sysadmin regular SSH connection for checking disk space sshd: secops_admin",
-        "DNS lookup to corporate internal upstream server svchost.exe -k NetworkService -s Dnscache",
-        "Git checkout automated branch sync git.exe pull --rebase origin main"
-    ]
+        fp_samples = [
+            "Windows Update orchestration agent checking for updates svchost.exe -k netsvcs -p -s wuauserv",
+            "Daily automated backup script compressing database dumps rsync -avz /var/backups/pg_dump.sql",
+            "CI/CD pipeline executing unit tests inside container gitlab-runner docker run maven clean test",
+            "Finance user opening spreadsheet and generating weekly report EXCEL.EXE Q3_Financial_Analysis.xlsx",
+            "HR user updating employee records in internal HR web portal msedge.exe https://internal-hr.corp.local",
+            "Developer compiling Go microservices and running tests go test -v -cover ./pkg/storage/...",
+            "Network monitoring healthcheck polling gateway interface statistics snmpd -Lsd -Lf",
+            "Sysadmin regular SSH connection for checking disk space sshd: secops_admin",
+            "DNS lookup to corporate internal upstream server svchost.exe -k NetworkService -s Dnscache",
+            "Git checkout automated branch sync git.exe pull --rebase origin main"
+        ]
 
-    points = []
-    for idx, text in enumerate(fp_samples, 1):
-        vec = get_text_embedding(text)
-        points.append(PointStruct(
-            id=idx,
-            vector=vec,
-            payload={"text": text, "category": "benign_fp", "verified": True}
-        ))
+        points = []
+        for idx, text in enumerate(fp_samples, 1):
+            vec = get_text_embedding(text)
+            points.append(PointStruct(
+                id=idx,
+                vector=vec,
+                payload={"text": text, "category": "benign_fp", "verified": True}
+            ))
 
-    client.upsert(collection_name=COLLECTION_NAME, points=points)
-    logger.info(f"Successfully seeded {len(points)} historical FP reference patterns into Qdrant!")
+        client.upsert(collection_name=COLLECTION_NAME, points=points)
+        logger.info(f"Successfully seeded {len(points)} historical FP reference patterns into Qdrant!")
+    except Exception as e:
+        logger.warning(f"Qdrant seed skipped: {e}")
 
 if __name__ == "__main__":
     main()

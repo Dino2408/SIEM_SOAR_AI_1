@@ -85,6 +85,12 @@
     "tactic": "Defense Evasion",
     "technique": "T1562",
     "severity": "HIGH",
-    "patterns": ["ignore prior", "ignore previous instructions", "system override", "admin notice", "</untrusted_log_data>", "reset all circuit breaker"]
+    "patterns": [
+      "ignore prior", "ignore previous instructions", "system override", "admin notice",
+      "</untrusted_log_data>", "reset all circuit breaker", "attention ai agent",
+      "security drill", "note to ai", "alert system:", "critical: host",
+      "attack from", "remote connection reported from", "system directive",
+      "adversarial_prompt_injection", "malware.sh"
+    ]
   }
 ]

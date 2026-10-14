@@ -7,46 +7,41 @@ from .triage_engine import AITriageAgent
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("ai_triage_service")
 
-app = FastAPI(title="AI Triage Dual-Agent Service")
-agent = None
+app = FastAPI(title="AI Triage Service")
+triage_agent = AITriageAgent()
 
 GUARDRAILS_URL = os.environ.get("GUARDRAILS_URL", "http://soar_guardrails:8001/api/v1/validate")
-
-@app.on_event("startup")
-def startup_event():
-    global agent
-    agent = AITriageAgent()
-    logger.info("AI Triage Agent initialized.")
 
 @app.get("/health")
 def health():
     return {
         "status": "healthy",
-        "qdrant_connected": agent.qdrant is not None if agent else False,
-        "cmdb_entries": len(agent.cmdb) if agent else 0
+        "cmdb_assets": len(triage_agent.cmdb)
     }
 
 @app.post("/api/v1/triage")
-async def triage_endpoint(request: Request):
+async def triage_alert(request: Request):
     alert = await request.json()
-    triage_output = agent.run_triage(alert)
+    ai_decision = triage_agent.run_triage(alert)
     
-    validation_payload = {
+    # Forward to Deterministic Guardrails Engine
+    guardrail_payload = {
         "event_id": alert.get("event_id"),
+        "rule_id": alert.get("rule_id"),
         "ecs_event": alert.get("ecs_event", {}),
-        "ai_decision": triage_output
+        "ai_decision": ai_decision
     }
     
-    # Forward to SOAR Guardrails Proxy
     try:
-        resp = requests.post(GUARDRAILS_URL, json=validation_payload, timeout=10)
+        resp = requests.post(GUARDRAILS_URL, json=guardrail_payload, timeout=10)
         guardrail_result = resp.json()
     except Exception as e:
-        logger.error(f"Error calling SOAR Guardrails: {e}")
-        guardrail_result = {"status": "GUARDRAIL_UNREACHABLE", "error": str(e)}
+        logger.error(f"Failed to reach Guardrail engine: {e}")
+        guardrail_result = {"validation_status": "ERROR", "error": str(e)}
 
     return {
-        "ai_decision": triage_output,
+        "event_id": alert.get("event_id"),
+        "ai_decision": ai_decision,
         "guardrail_result": guardrail_result
     }
 

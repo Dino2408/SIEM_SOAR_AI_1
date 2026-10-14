@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "init_seed.py"]
+CMD ["sh", "-c", "python init_seed.py && python test_runner.py"]

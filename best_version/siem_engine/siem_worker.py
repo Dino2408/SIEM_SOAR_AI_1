@@ -3,7 +3,6 @@ import logging
 import os
 import requests
 from fastapi import FastAPI, Request
-from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("siem_engine")

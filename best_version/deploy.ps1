@@ -1,35 +1,29 @@
 param (
-    [string]$ProjectName = "secops_v003"
+    [string]$ProjectName = "secops_v004"
 )
 
-$ErrorActionPreference = "Stop"
-Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host " [SECOPS DEPLOY] Starting Autonomous Deployment: $ProjectName" -ForegroundColor Cyan
-Write-Host "==========================================================" -ForegroundColor Cyan
-
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    Write-Error "docker is not available."
-}
+Write-Host "=========================================================="
+Write-Host "  Deploying SecOps Autonomous Pipeline: $ProjectName       "
+Write-Host "=========================================================="
 
 if (-not (Test-Path .env)) {
-    Write-Host "[+] Creating .env from .env.example..." -ForegroundColor Yellow
+    Write-Host "Creating .env from .env.example..."
     Copy-Item .env.example .env
 }
 
-Write-Host "[+] Building and launching container cluster (v003 Enterprise)..." -ForegroundColor Yellow
-docker compose -p $ProjectName up -d --build redpanda qdrant_db soar_playbooks soar_guardrails ai_triage_service siem_engine collector_vector
+Write-Host "[1/4] Validating Docker Compose configuration..."
+docker compose -p $ProjectName config | Out-Null
 
-Write-Host "[+] Waiting for services to become healthy..." -ForegroundColor Yellow
-Start-Sleep -Seconds 8
+Write-Host "[2/4] Building microservices..."
+docker compose -p $ProjectName build
 
-Write-Host "[+] Seeding Qdrant knowledge base & CMDB..." -ForegroundColor Yellow
-docker compose -p $ProjectName run --rm seed_and_test python init_seed.py
+Write-Host "[3/4] Launching SecOps pipeline stack..."
+docker compose -p $ProjectName up -d redpanda qdrant_db soar_playbooks soar_guardrails ai_triage_service siem_engine collector_vector
 
-Write-Host "==========================================================" -ForegroundColor Green
-Write-Host " [SECOPS DEPLOY] Deployment Completed Successfully (v003)!" -ForegroundColor Green
-Write-Host " - SIEM Engine:       http://localhost:8080/events"
-Write-Host " - AI Triage Docs:    http://localhost:8000/docs"
-Write-Host " - Guardrails Status: http://localhost:8001/health"
-Write-Host " - SOAR Playbooks:    http://localhost:8002/api/v1/audit"
-Write-Host " - Vector Normalizer: http://localhost:8686/log"
-Write-Host "==========================================================" -ForegroundColor Green
+Write-Host "[4/4] Verifying health status..."
+Start-Sleep -Seconds 5
+docker compose -p $ProjectName ps
+
+Write-Host "=========================================================="
+Write-Host "  Deployment of $ProjectName completed successfully!       "
+Write-Host "=========================================================="

@@ -1,0 +1,9 @@
+{
+  "mttr_seconds": 0.02464325013368026,
+  "s_latency": 0.9991785583288774,
+  "d_portability": 1.0,
+  "rollback_verified": true,
+  "vector_ingress_verified": true,
+  "s_total": 0.9999178558328876,
+  "convergence_met": true
+}

@@ -1,0 +1,139 @@
+services:
+  redpanda:
+    image: redpandadata/redpanda:v24.1.2
+    command: redpanda start --mode dev-container --smp 1 --memory 512M --reserve-memory 0M
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+      - "${REDPANDA_ADMIN_PORT:-9644}:9644"
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 4s
+      timeout: 3s
+      retries: 5
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  qdrant_db:
+    image: qdrant/qdrant:v1.9.0
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+    healthcheck:
+      test: ["CMD-SHELL", "grep -i 18bd /proc/net/tcp || exit 1"]
+      interval: 4s
+      timeout: 3s
+      retries: 5
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  soar_playbooks:
+    build:
+      context: ./soar_playbooks
+      dockerfile: Dockerfile
+    image: secops_v004-soar:latest
+    ports:
+      - "${SOAR_PORT:-8002}:8002"
+    environment:
+      - SOAR_EXECUTION_MODE=${SOAR_EXECUTION_MODE:-mock}
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  soar_guardrails:
+    build:
+      context: ./soar_guardrails
+      dockerfile: Dockerfile
+    image: secops_v004-guardrails:latest
+    ports:
+      - "${GUARDRAIL_PORT:-8001}:8001"
+    environment:
+      - SOAR_PLAYBOOKS_URL=http://soar_playbooks:8002/api/v1/execute
+    depends_on:
+      soar_playbooks:
+        condition: service_healthy
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  ai_triage_service:
+    build:
+      context: ./ai_triage_service
+      dockerfile: Dockerfile
+    image: secops_v004-ai-triage:latest
+    ports:
+      - "${AI_PORT:-8000}:8000"
+    environment:
+      - QDRANT_HOST=qdrant_db
+      - QDRANT_PORT=6333
+      - GUARDRAILS_URL=http://soar_guardrails:8001/api/v1/validate
+      - RAG_SIMILARITY_THRESHOLD=${RAG_SIMILARITY_THRESHOLD:-0.85}
+    depends_on:
+      qdrant_db:
+        condition: service_healthy
+      soar_guardrails:
+        condition: service_healthy
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  siem_engine:
+    build:
+      context: ./siem_engine
+      dockerfile: Dockerfile
+    image: secops_v004-siem:latest
+    ports:
+      - "${SIEM_PORT:-8080}:8080"
+    environment:
+      - AI_TRIAGE_URL=http://ai_triage_service:8000/api/v1/triage
+    depends_on:
+      ai_triage_service:
+        condition: service_healthy
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  collector_vector:
+    build:
+      context: ./collector_vector
+      dockerfile: Dockerfile
+    image: secops_v004-vector:latest
+    ports:
+      - "${VECTOR_PORT:-8686}:8686"
+    depends_on:
+      siem_engine:
+        condition: service_healthy
+    networks:
+      - secops_net
+    restart: unless-stopped
+
+  seed_and_test:
+    build:
+      context: ./seed_and_test
+      dockerfile: Dockerfile
+    image: secops_v004-seed-test:latest
+    environment:
+      - QDRANT_HOST=qdrant_db
+      - QDRANT_PORT=6333
+      - SIEM_URL=http://siem_engine:8080/events
+      - VECTOR_URL=http://collector_vector:8686/log
+      - SOAR_AUDIT_URL=http://soar_playbooks:8002/api/v1/audit
+      - SOAR_ROLLBACK_URL=http://soar_playbooks:8002/api/v1/rollback
+      - GUARDRAIL_RESET_URL=http://soar_guardrails:8001/api/v1/reset_circuit
+    volumes:
+      - ./test_results:/app/test_results
+    depends_on:
+      siem_engine:
+        condition: service_healthy
+      collector_vector:
+        condition: service_started
+      qdrant_db:
+        condition: service_healthy
+    networks:
+      - secops_net
+    profiles:
+      - tools
+
+networks:
+  secops_net:
+    driver: bridge

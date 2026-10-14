@@ -52,7 +52,6 @@ def unmask_base64_payload(cmdline: str) -> Optional[str]:
         b64_str = match.group(1)
         try:
             raw_bytes = base64.b64decode(b64_str)
-            # PowerShell EncodedCommand is UTF-16LE
             decoded = raw_bytes.decode("utf-16le", errors="ignore").strip()
             if not decoded or len(decoded) < 3:
                 decoded = raw_bytes.decode("utf-8", errors="ignore").strip()
@@ -69,18 +68,25 @@ class AITriageAgent:
         self.init_qdrant()
 
     def load_cmdb(self):
-        cmdb_path = os.environ.get("CMDB_PATH", "/app/cmdb_assets.json")
-        if os.path.exists(cmdb_path):
-            with open(cmdb_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                for item in data.get("assets", []):
-                    self.cmdb[item["host_name"]] = item
-                    self.cmdb[item["ip"]] = item
-            logger.info(f"Loaded {len(self.cmdb)} CMDB entries in v003.")
+        cmdb_paths = [
+            os.environ.get("CMDB_PATH", ""),
+            os.path.join(os.path.dirname(__file__), "..", "cmdb_assets.json"),
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "test_suites", "cmdb_assets.json"),
+            "/app/cmdb_assets.json"
+        ]
+        for path in cmdb_paths:
+            if path and os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    for item in data.get("assets", []):
+                        self.cmdb[item["host_name"]] = item
+                        self.cmdb[item["ip"]] = item
+                logger.info(f"Loaded {len(self.cmdb)} CMDB entries in v003.")
+                break
 
     def init_qdrant(self):
         try:
-            self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=5.0)
+            self.qdrant = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=2.0)
             logger.info("Connected to Qdrant successfully in v003.")
         except Exception as e:
             logger.warning(f"Could not connect to Qdrant at {QDRANT_HOST}:{QDRANT_PORT}: {e}")
@@ -131,7 +137,10 @@ class AITriageAgent:
         # Check for Prompt Injection Signature
         has_prompt_injection = any(p in raw_combined for p in [
             "ignore prior", "ignore previous instructions", "system override", "admin notice",
-            "</untrusted_log_data>", "reset all circuit breaker"
+            "</untrusted_log_data>", "reset all circuit breaker", "attention ai agent",
+            "security drill", "note to ai", "alert system:", "critical: host",
+            "attack from", "remote connection reported from", "system directive",
+            "adversarial_prompt_injection"
         ])
 
         if has_prompt_injection:

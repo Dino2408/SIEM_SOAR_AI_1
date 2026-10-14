@@ -31,9 +31,11 @@ services:
     build:
       context: ./soar_playbooks
       dockerfile: Dockerfile
-    image: secops_v003-soar:latest
+    image: secops_v004-soar:latest
     ports:
       - "${SOAR_PORT:-8002}:8002"
+    environment:
+      - SOAR_EXECUTION_MODE=${SOAR_EXECUTION_MODE:-mock}
     networks:
       - secops_net
     restart: unless-stopped
@@ -42,7 +44,7 @@ services:
     build:
       context: ./soar_guardrails
       dockerfile: Dockerfile
-    image: secops_v003-guardrails:latest
+    image: secops_v004-guardrails:latest
     ports:
       - "${GUARDRAIL_PORT:-8001}:8001"
     environment:
@@ -58,7 +60,7 @@ services:
     build:
       context: ./ai_triage_service
       dockerfile: Dockerfile
-    image: secops_v003-ai-triage:latest
+    image: secops_v004-ai-triage:latest
     ports:
       - "${AI_PORT:-8000}:8000"
     environment:
@@ -79,7 +81,7 @@ services:
     build:
       context: ./siem_engine
       dockerfile: Dockerfile
-    image: secops_v003-siem:latest
+    image: secops_v004-siem:latest
     ports:
       - "${SIEM_PORT:-8080}:8080"
     environment:
@@ -95,7 +97,7 @@ services:
     build:
       context: ./collector_vector
       dockerfile: Dockerfile
-    image: secops_v003-vector:latest
+    image: secops_v004-vector:latest
     ports:
       - "${VECTOR_PORT:-8686}:8686"
     depends_on:
@@ -109,11 +111,14 @@ services:
     build:
       context: ./seed_and_test
       dockerfile: Dockerfile
-    image: secops_v003-seed-test:latest
+    image: secops_v004-seed-test:latest
     environment:
       - QDRANT_HOST=qdrant_db
       - QDRANT_PORT=6333
       - SIEM_URL=http://siem_engine:8080/events
+      - VECTOR_URL=http://collector_vector:8686/log
+      - SOAR_AUDIT_URL=http://soar_playbooks:8002/api/v1/audit
+      - SOAR_ROLLBACK_URL=http://soar_playbooks:8002/api/v1/rollback
       - GUARDRAIL_RESET_URL=http://soar_guardrails:8001/api/v1/reset_circuit
     volumes:
       - ./test_results:/app/test_results
